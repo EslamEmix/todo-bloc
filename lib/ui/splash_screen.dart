@@ -23,7 +23,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
   startTime() {
     BlocProvider.of<SplashBloc>(context).add(StartTimeEvent());
-    // context.bloc<SplashBloc>().;
+    // context.bloc<SplashBloc>();
   }
 
   Future navigationPage() async {
