@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = new DatabaseHelper.internal();
+
   factory DatabaseHelper() => _instance;
   final String tableName = "todoTable";
   final String columnId = "id";
@@ -41,9 +42,10 @@ class DatabaseHelper {
   Future<int> saveItem(ToDoItem item) async {
     var dbclient = await db;
     int res = await dbclient.insert("$tableName", item.toMap());
-    print(res.toString());
+    //print(res.toString());
     return res;
   }
+
   //get
 
   Future<List> getItems() async {

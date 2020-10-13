@@ -4,7 +4,9 @@ class ToDoItem extends StatelessWidget {
   String _itemName;
   String _dateCreated;
   int _id;
+
   ToDoItem(this._itemName, this._dateCreated);
+
   ToDoItem.map(dynamic obj) {
     this._dateCreated = obj["dateCreated"];
     this._itemName = obj["itemName"];
@@ -12,8 +14,11 @@ class ToDoItem extends StatelessWidget {
   }
 
   String get itemName => _itemName;
+
   String get dateCreated => _dateCreated;
+
   int get id => _id;
+
   Map<String, dynamic> toMap() {
     var map = new Map<String, dynamic>();
     map["dateCreated"] = _dateCreated;
@@ -39,7 +44,7 @@ class ToDoItem extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           new Flexible(
-                      child: new Column(
+            child: new Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   new Text(

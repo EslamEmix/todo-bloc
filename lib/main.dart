@@ -18,7 +18,7 @@ class MyApp extends StatelessWidget {
           create: (BuildContext context) => SplashBloc(),
         ),
         BlocProvider<TodoBloc>(
-          create: (BuildContext context) => TodoBloc(FakeTodoRepo()),
+          create: (BuildContext context) => TodoBloc(TodoRepo()),
         ),
       ],
       child: MaterialApp(

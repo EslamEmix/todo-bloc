@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:todo/bloc/todo/todo_bloc.dart';
 import '../model/todo_item.dart';
 import '../util/database_client.dart';
 import '../util/dateformatter.dart';
@@ -10,22 +12,21 @@ class ToDoScreen extends StatefulWidget {
 
 class _ToDoScreenState extends State<ToDoScreen> {
   final TextEditingController _textEditingController = TextEditingController();
+
   // var db = DatabaseHelper();
   final List<ToDoItem> _itemlist = <ToDoItem>[];
+
   @override
   void initState() {
     super.initState();
     _readTodoLists();
   }
 
-  void _handleSubmit(String text) async {
+  void _handleSubmit(String text) {
     _textEditingController.clear();
     ToDoItem toDoItem = ToDoItem(text, dateFormatted());
-    // int savedItemID = await db.saveItem(toDoItem);
-    // ToDoItem addedItem = await db.getItem(savedItemID);
-    setState(() {
-      _itemlist.insert(0, toDoItem);
-    });
+    BlocProvider.of<TodoBloc>(context).add(SaveItemFromDialog(toDoItem));
+
     // print("Item saved Id is $savedItemID");
   }
 
@@ -33,36 +34,63 @@ class _ToDoScreenState extends State<ToDoScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.blue[100],
-      body: Column(
-        children: <Widget>[
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(8.0),
-              itemCount: _itemlist.length,
-              itemBuilder: (_, int index) {
-                return Card(
-                  color: Colors.blue,
-                  child: ListTile(
-                    title: _itemlist[index],
-                    onLongPress: () => _updateItem(_itemlist[index], index),
-                    trailing: Listener(
-                      key: Key(_itemlist[index].itemName),
-                      child: Icon(
-                        Icons.delete_sweep,
-                        color: Colors.white,
-                      ),
-                      onPointerDown: (pointerEvent) =>
-                          _deleteTodo(_itemlist[index].id, index),
-                    ),
+      body: BlocListener<TodoBloc, TodoState>(
+        listener: (context, state) {
+          if (state is SaveItemSuc) {
+            _readTodoLists();
+            showSnack(context, "Item Saved");
+          } else if (state is DeleteSuc) {
+            _readTodoLists();
+            showSnack(context, "Item Deleted");
+          } else if (state is UpdateSuc) {
+            _readTodoLists();
+            showSnack(context, "Item Updated");
+          }
+        },
+        child: BlocBuilder<TodoBloc, TodoState>(builder: (context, state) {
+          if (state is ReceivedItems) {
+            _itemlist.clear();
+            _itemlist.addAll(state.items);
+            return Column(
+              children: <Widget>[
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(8.0),
+                    itemCount: _itemlist.length,
+                    itemBuilder: (_, int index) {
+                      return Card(
+                        color: Colors.blue,
+                        child: ListTile(
+                          title: _itemlist[index],
+                          onLongPress: () =>
+                              _updateItem(_itemlist[index], index),
+                          trailing: Listener(
+                            key: Key(_itemlist[index].itemName),
+                            child: Icon(
+                              Icons.delete_sweep,
+                              color: Colors.white,
+                            ),
+                            onPointerDown: (pointerEvent) =>
+                                _deleteTodo(_itemlist[index].id, index),
+                          ),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
-          ),
-          Container(
-            height: 30.0,
-          ),
-        ],
+                ),
+                Container(
+                  height: 30.0,
+                ),
+              ],
+            );
+          } else if (state is ErrorState) {
+            return Center(
+              child: Text(state.massage),
+            );
+          } else {
+            return Center(child: CircularProgressIndicator());
+          }
+        }),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showFormDialouge,
@@ -73,6 +101,13 @@ class _ToDoScreenState extends State<ToDoScreen> {
         ),
       ),
     );
+  }
+
+  void showSnack(BuildContext context, String message) {
+    Scaffold.of(context).showSnackBar(SnackBar(
+      content: Text(message),
+      duration: Duration(milliseconds: 1200),
+    ));
   }
 
   void _showFormDialouge() {
@@ -96,7 +131,6 @@ class _ToDoScreenState extends State<ToDoScreen> {
           color: Colors.blue,
           onPressed: () {
             _handleSubmit(_textEditingController.text);
-            _textEditingController.clear();
             Navigator.pop(context);
           },
           child: Text(
@@ -109,7 +143,7 @@ class _ToDoScreenState extends State<ToDoScreen> {
           color: Colors.blueGrey,
           onPressed: () {
             Navigator.pop(context);
-            print("Cancled succesfully");
+            //print("Cancled succesfully");
           },
           child: Text(
             "Cancel",
@@ -125,26 +159,18 @@ class _ToDoScreenState extends State<ToDoScreen> {
         });
   }
 
-  _readTodoLists() async {
-    // List items = await db.getItems();
-    // items.forEach((item) {
-    //   ToDoItem toDoItem = ToDoItem.fromMap(item);
-    //   setState(() {
-    //     _itemlist.add(ToDoItem.map(item));
-    //   });
-    //   print("Db items ${toDoItem.itemName}");
-    // });
+  _readTodoLists() {
+    BlocProvider.of<TodoBloc>(context).add(GetItemData());
   }
 
-  _deleteTodo(int id, int index) async {
+  _deleteTodo(int id, int index) {
     // debugPrint("Deleted items");
     // await db.deleteItem(id);
-    setState(() {
-      _itemlist.removeAt(index);
-    });
+    BlocProvider.of<TodoBloc>(context).add(DeleteEvent(id));
   }
 
   _updateItem(ToDoItem item, int index) {
+    _textEditingController.text = item.itemName;
     var alert = AlertDialog(
       title: Text("Update Item"),
       content: Row(
@@ -155,7 +181,7 @@ class _ToDoScreenState extends State<ToDoScreen> {
               autofocus: true,
               decoration: InputDecoration(
                   labelText: "Item",
-                  hintText: "e.g update ",
+                  //hintText: "e.g update ",
                   icon: Icon(Icons.update)),
             ),
           )
@@ -164,18 +190,8 @@ class _ToDoScreenState extends State<ToDoScreen> {
       actions: <Widget>[
         FlatButton(
           onPressed: () async {
-            ToDoItem newItemupdated = ToDoItem.fromMap(
-                //
-                {
-                  "itemName": _textEditingController.text,
-                  "dateCreated": dateFormatted(),
-                  "id": item.id
-                });
-            _handleSubmittedUpdated(index, item);
+            _handleSubmittedUpdated(item);
             // await db.updateItem(newItemupdated);
-            setState(() {
-              _readTodoLists();
-            });
             Navigator.pop(context);
           },
           child: Text("Update"),
@@ -193,11 +209,11 @@ class _ToDoScreenState extends State<ToDoScreen> {
         });
   }
 
-  void _handleSubmittedUpdated(int index, ToDoItem item) {
-    setState(() {
-      _itemlist.removeWhere((element) {
-        _itemlist[index].itemName == item.itemName;
-      });
-    });
+  void _handleSubmittedUpdated(ToDoItem item) {
+    ToDoItem toDoItem = ToDoItem(_textEditingController.text, dateFormatted());
+    print(toDoItem.itemName);
+    _textEditingController.clear();
+    BlocProvider.of<TodoBloc>(context)
+        .add(UpdateItemFromDialog(toDoItem, item.id));
   }
 }

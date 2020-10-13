@@ -11,6 +11,7 @@ class LoadingTodo extends TodoState {}
 
 class ErrorState extends TodoState {
   final String massage;
+
   ErrorState(this.massage);
 }
 

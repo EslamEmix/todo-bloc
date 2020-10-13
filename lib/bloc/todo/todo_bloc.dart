@@ -6,10 +6,12 @@ import 'package:todo/bloc/todo/repo.dart';
 import 'package:todo/model/todo_item.dart';
 
 part 'todo_event.dart';
+
 part 'todo_state.dart';
 
 class TodoBloc extends Bloc<TodoEvent, TodoState> {
   final BaseTodoRepo todoRepo;
+
   TodoBloc(this.todoRepo) : super(TodoInitial());
 
   @override
@@ -20,6 +22,7 @@ class TodoBloc extends Bloc<TodoEvent, TodoState> {
       yield LoadingTodo();
       yield await todoRepo.getTodoItems();
     } else if (event is DeleteEvent) {
+      yield await todoRepo.deleteTodoItem(event.index);
       yield LoadingTodo();
       yield await todoRepo.deleteTodoItem(event.index);
     } else if (event is OpenNewDialogEvent) {
